@@ -75,7 +75,7 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
     /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager */
     $entity_type_manager = $container->get('entity_type.manager');
 
-    return new static($configuration, $plugin_id, $plugin_definition, $entity_type_manager->getStorage($configuration['entity_type']), $container->get('entity_type.bundle.info'), $entity_type_manager->getDefinition($configuration['entity_type']));
+    return new static($configuration, $plugin_id, $plugin_definition, $entity_type_manager->getStorage($configuration['verf_target_entity_type_id']), $container->get('entity_type.bundle.info'), $entity_type_manager->getDefinition($configuration['verf_target_entity_type_id']));
   }
 
   /**
