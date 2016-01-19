@@ -18,7 +18,7 @@ function verf_views_data_alter(array &$data) {
     $table_name = $field_config->getTargetEntityTypeId() . '__' . $field_config->getName();
     $column_name = $field_config->getName() . '_target_id';
     if (isset($data[$table_name][$column_name])) {
-      $data[$table_name][$column_name] = [
+      $data[$table_name][$column_name . '_verf'] = [
         'title' => t('@label (VERF selector)', [
           '@label' => $field_config->label(),
         ]),
