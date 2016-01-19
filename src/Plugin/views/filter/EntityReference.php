@@ -81,6 +81,13 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
   /**
    * {@inheritdoc}
    */
+  public function calculateDependencies() {
+    return ['views', $this->targetEntityType->getProvider()];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   protected function defineOptions() {
     $options = parent::defineOptions();
     $options['verf_target_bundles'] = [
