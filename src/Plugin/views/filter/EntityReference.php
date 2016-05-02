@@ -11,7 +11,10 @@ use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Language\LanguageInterface;
+use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\Core\TypedData\TranslatableInterface;
 use Drupal\views\Plugin\views\filter\InOperator;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -30,6 +33,13 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
    * @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface
    */
   protected $entityTypeBundleInfo;
+
+  /**
+   * The language manager.
+   *
+   * @var \Drupal\Core\Language\LanguageManagerInterface
+   */
+  protected $languageManager;
 
   /**
    * The target entity storage.
@@ -54,6 +64,8 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
    *   The plugin ID.
    * @param mixed[] $plugin_definition
    *   The plugin definition.
+   * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
+   *   The language manager.
    * @param \Drupal\Core\Entity\EntityStorageInterface $target_entity_storage
    *   The target entity storage.
    * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $entity_type_bundle_info
@@ -61,11 +73,12 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
    * @param \Drupal\Core\Entity\EntityTypeInterface $target_entity_type
    *   The target entity type.
    */
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition, EntityStorageInterface $target_entity_storage, EntityTypeBundleInfoInterface $entity_type_bundle_info, EntityTypeInterface $target_entity_type) {
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, LanguageManagerInterface $language_manager, EntityStorageInterface $target_entity_storage, EntityTypeBundleInfoInterface $entity_type_bundle_info, EntityTypeInterface $target_entity_type) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->entityTypeBundleInfo = $entity_type_bundle_info;
     $this->targetEntityStorage = $target_entity_storage;
     $this->targetEntityType = $target_entity_type;
+    $this->languageManager = $language_manager;
   }
 
   /**
@@ -75,14 +88,7 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
     /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager */
     $entity_type_manager = $container->get('entity_type.manager');
 
-    return new static($configuration, $plugin_id, $plugin_definition, $entity_type_manager->getStorage($configuration['verf_target_entity_type_id']), $container->get('entity_type.bundle.info'), $entity_type_manager->getDefinition($configuration['verf_target_entity_type_id']));
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function calculateDependencies() {
-    return ['views', $this->targetEntityType->getProvider()];
+    return new static($configuration, $plugin_id, $plugin_definition, $container->get('language_manager'), $entity_type_manager->getStorage($configuration['verf_target_entity_type_id']), $container->get('entity_type.bundle.info'), $entity_type_manager->getDefinition($configuration['verf_target_entity_type_id']));
   }
 
   /**
@@ -138,6 +144,10 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
 
     $this->valueOptions = [];
     foreach ($this->targetEntityStorage->loadMultiple($target_ids) as $entity) {
+      $current_content_language_id = $this->languageManager->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)->getId();
+      if ($entity instanceof TranslatableInterface && $entity->hasTranslation($current_content_language_id)) {
+        $entity = $entity->getTranslation($current_content_language_id);
+      }
       $this->valueOptions[$entity->id()] = $entity->label();
     }
     natcasesort($this->valueOptions);
