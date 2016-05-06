@@ -197,6 +197,7 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
    */
   public function getCacheTags() {
     $cache_tags = Cache::mergeTags(parent::getCacheTags(), $this->view->storage->getCacheTags());
+    $cache_tags = Cache::mergeTags($cache_tags, $this->targetEntityType->getListCacheTags());
     $cache_tags = array_reduce($this->getReferenceableEntities(), function(array $cache_tags, EntityInterface $entity) {
       return Cache::mergeTags($cache_tags, $entity->getCacheTags());
     }, $cache_tags);
@@ -209,6 +210,7 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
    */
   public function getCacheContexts() {
     $cache_contexts = Cache::mergeContexts(parent::getCacheContexts(), $this->view->storage->getCacheContexts());
+    $cache_contexts = Cache::mergeContexts($cache_contexts, $this->targetEntityType->getListCacheContexts());
     $cache_contexts = array_reduce($this->getReferenceableEntities(), function(array $cache_contexts, EntityInterface $entity) {
       return Cache::mergeContexts($cache_contexts, $entity->getCacheContexts());
     }, $cache_contexts);
