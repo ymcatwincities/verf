@@ -7,6 +7,9 @@
 
 namespace Drupal\verf\Plugin\views\filter;
 
+use Drupal\Core\Cache\Cache;
+use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
@@ -40,6 +43,15 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
    * @var \Drupal\Core\Language\LanguageManagerInterface
    */
   protected $languageManager;
+
+  /**
+   * The referenceable entities.
+   *
+   * @var \Drupal\Core\Entity\EntityInterface[]|null
+   *
+   * @see static::getReferenceableEntities()
+   */
+  protected $referenceableEntities;
 
   /**
    * The target entity storage.
@@ -127,11 +139,45 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
   /**
    * {@inheritdoc}
    */
+  protected function valueForm(&$form, FormStateInterface $form_state) {
+    parent::valueForm($form, $form_state);
+    // Apply cacheability metadata, because the parent class does not.
+    $cacheability_metdata = CacheableMetadata::createFromObject($this);
+    $cacheability_metdata->applyTo($form);
+
+    return $form;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function getValueOptions() {
     if (!is_null($this->valueOptions)) {
       return $this->valueOptions;
     }
 
+    $this->valueOptions = [];
+    foreach ($this->getReferenceableEntities() as $entity) {
+      $current_content_language_id = $this->languageManager->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)->getId();
+      if ($entity instanceof TranslatableInterface && $entity->hasTranslation($current_content_language_id)) {
+        $entity = $entity->getTranslation($current_content_language_id);
+      }
+      $this->valueOptions[$entity->id()] = $entity->label();
+    }
+    natcasesort($this->valueOptions);
+
+    return $this->valueOptions;
+  }
+
+  /**
+   * Gets the entities that can be filtered by.
+   *
+   * @return \Drupal\Core\Entity\EntityInterface[]
+   */
+  protected function getReferenceableEntities() {
+    if ($this->referenceableEntities !== NULL) {
+      return $this->referenceableEntities;
+    }
     $target_ids = NULL;
 
     // Filter by bundle if if the plugin was configured to do so.
@@ -142,17 +188,44 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
       $target_ids = array_keys($query->execute());
     }
 
-    $this->valueOptions = [];
-    foreach ($this->targetEntityStorage->loadMultiple($target_ids) as $entity) {
-      $current_content_language_id = $this->languageManager->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)->getId();
-      if ($entity instanceof TranslatableInterface && $entity->hasTranslation($current_content_language_id)) {
-        $entity = $entity->getTranslation($current_content_language_id);
-      }
-      $this->valueOptions[$entity->id()] = $entity->label();
-    }
-    natcasesort($this->valueOptions);
+    $this->referenceableEntities = $this->targetEntityStorage->loadMultiple($target_ids);
+    return $this->referenceableEntities;
+  }
 
-    return $this->valueOptions;
+  /**
+   * {@inheritdoc}
+   */
+  public function getCacheTags() {
+    $cache_tags = Cache::mergeTags(parent::getCacheTags(), $this->view->storage->getCacheTags());
+    $cache_tags = array_reduce($this->getReferenceableEntities(), function(array $cache_tags, EntityInterface $entity) {
+      return Cache::mergeTags($cache_tags, $entity->getCacheTags());
+    }, $cache_tags);
+
+    return $cache_tags;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getCacheContexts() {
+    $cache_contexts = Cache::mergeContexts(parent::getCacheContexts(), $this->view->storage->getCacheContexts());
+    $cache_contexts = array_reduce($this->getReferenceableEntities(), function(array $cache_contexts, EntityInterface $entity) {
+      return Cache::mergeContexts($cache_contexts, $entity->getCacheContexts());
+    }, $cache_contexts);
+
+    return $cache_contexts;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getCacheMaxAge() {
+    $cache_max_age = Cache::mergeMaxAges(parent::getCacheMaxAge(), $this->view->storage->getCacheMaxAge());
+    $cache_max_age = array_reduce($this->getReferenceableEntities(), function($cache_max_age, EntityInterface $entity) {
+      return Cache::mergeMaxAges($cache_max_age, $entity->getCacheMaxAge());
+    }, $cache_max_age);
+
+    return $cache_max_age;
   }
 
 }
