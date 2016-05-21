@@ -185,7 +185,7 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
     if ($this->targetEntityType->hasKey('bundle') && $target_bundles) {
       $query = $this->targetEntityStorage->getQuery();
       $query->condition($this->targetEntityType->getKey('bundle'), $target_bundles, 'IN');
-      $target_ids = array_keys($query->execute());
+      $target_ids = $query->execute();
     }
 
     $this->referenceableEntities = $this->targetEntityStorage->loadMultiple($target_ids);
