@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\verf\Plugin\views\filter\InOperator.
- */
-
 namespace Drupal\verf\Plugin\views\filter;
 
 use Drupal\Core\Cache\Cache;
