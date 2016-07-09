@@ -137,6 +137,7 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
   protected function valueForm(&$form, FormStateInterface $form_state) {
     parent::valueForm($form, $form_state);
     // Apply cacheability metadata, because the parent class does not.
+    // @todo Remove this once https://www.drupal.org/node/2754103 is fixed.
     $cacheability_metdata = CacheableMetadata::createFromObject($this);
     $cacheability_metdata->applyTo($form);
 
@@ -157,6 +158,7 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
       if ($entity instanceof TranslatableInterface && $entity->hasTranslation($current_content_language_id)) {
         $entity = $entity->getTranslation($current_content_language_id);
       }
+
       $this->valueOptions[$entity->id()] = $entity->label();
     }
     natcasesort($this->valueOptions);
@@ -193,9 +195,6 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
   public function getCacheTags() {
     $cache_tags = Cache::mergeTags(parent::getCacheTags(), $this->view->storage->getCacheTags());
     $cache_tags = Cache::mergeTags($cache_tags, $this->targetEntityType->getListCacheTags());
-    $cache_tags = array_reduce($this->getReferenceableEntities(), function(array $cache_tags, EntityInterface $entity) {
-      return Cache::mergeTags($cache_tags, $entity->getCacheTags());
-    }, $cache_tags);
 
     return $cache_tags;
   }
@@ -206,9 +205,6 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
   public function getCacheContexts() {
     $cache_contexts = Cache::mergeContexts(parent::getCacheContexts(), $this->view->storage->getCacheContexts());
     $cache_contexts = Cache::mergeContexts($cache_contexts, $this->targetEntityType->getListCacheContexts());
-    $cache_contexts = array_reduce($this->getReferenceableEntities(), function(array $cache_contexts, EntityInterface $entity) {
-      return Cache::mergeContexts($cache_contexts, $entity->getCacheContexts());
-    }, $cache_contexts);
 
     return $cache_contexts;
   }
@@ -218,9 +214,6 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
    */
   public function getCacheMaxAge() {
     $cache_max_age = Cache::mergeMaxAges(parent::getCacheMaxAge(), $this->view->storage->getCacheMaxAge());
-    $cache_max_age = array_reduce($this->getReferenceableEntities(), function($cache_max_age, EntityInterface $entity) {
-      return Cache::mergeMaxAges($cache_max_age, $entity->getCacheMaxAge());
-    }, $cache_max_age);
 
     return $cache_max_age;
   }
