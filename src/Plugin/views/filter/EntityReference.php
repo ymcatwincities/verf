@@ -115,18 +115,22 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
    */
   public function buildOptionsForm(&$form, FormStateInterface $form_state) {
     parent::buildOptionsForm($form, $form_state);
-    if ($this->targetEntityType->hasKey('bundle')) {
-      $options = [];
-      foreach ($this->entityTypeBundleInfo->getBundleInfo($this->targetEntityType->id()) as $bundle_id => $bundle_info) {
-        $options[$bundle_id] = $bundle_info['label'];
-      }
-      $form['verf_target_bundles'] = [
-        '#type' => 'checkboxes',
-        '#title' => $this->t('Target entity bundles to filter by'),
-        '#options' => $options,
-        '#default_value' => array_filter($this->options['verf_target_bundles']),
-      ];
+    if (!$this->targetEntityType->hasKey('bundle')) {
+      return $form;
     }
+
+    $options = [];
+    $bundleInfo = $this->entityTypeBundleInfo->getBundleInfo($this->targetEntityType->id());
+    foreach ($bundleInfo as $id => $info) {
+      $options[$id] = $info['label'];
+    }
+
+    $form['verf_target_bundles'] = [
+      '#type' => 'checkboxes',
+      '#title' => $this->t('Target entity bundles to filter by'),
+      '#options' => $options,
+      '#default_value' => array_filter($this->options['verf_target_bundles']),
+    ];
 
     return $form;
   }
@@ -148,7 +152,7 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
    * {@inheritdoc}
    */
   public function getValueOptions() {
-    if (!is_null($this->valueOptions)) {
+    if ($this->valueOptions !== NULL) {
       return $this->valueOptions;
     }
 
