@@ -12,6 +12,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\TypedData\TranslatableInterface;
 use Drupal\views\Plugin\views\filter\InOperator;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -163,6 +164,12 @@ class EntityReference extends InOperator implements ContainerFactoryPluginInterf
         $entity = $entity->getTranslation($current_content_language_id);
       }
 
+      // Use the special view label, since some entities allow the label to be
+      // viewed, even if the entity is not allowed to be viewed.
+      if (!$entity->access('view label')) {
+        $this->valueOptions[$entity->id()] = new TranslatableMarkup('- Restricted access -');
+        continue;
+      }
       $this->valueOptions[$entity->id()] = $entity->label();
     }
     natcasesort($this->valueOptions);
