@@ -43,7 +43,7 @@ function verf_views_data_alter(array &$data) {
   }
 
   foreach ($manager->getDefinitions() as $entity_type) {
-    if (!$entity_type->isSubclassOf(FieldableEntityInterface::class)) {
+    if (!$entity_type->entityClassImplements(FieldableEntityInterface::class)) {
       continue;
     }
 
