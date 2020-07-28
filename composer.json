@@ -1,0 +1,7 @@
+{
+    "name": "ymcatwincities/verf",
+    "description": "Views Entiry Reference fork",
+    "type": "drupal-module",
+    "license": "GPL-2.0+",
+    "minimum-stability": "dev"
+}
